@@ -1,4 +1,4 @@
-                                                    # 以太坊上的彩票开奖设计
+# 以太坊上的彩票开奖设计
 
 ## 前期准备
 
@@ -133,7 +133,7 @@ npm run start //运行react空工程
 
 ### 	 **清理react空工程**
 
-​	![](C:\Users\11346\Desktop\以太坊学习\assets\react工程清理.png)
+​	![](./assets/react工程清理.png)
 
 ​	src文件夹下只保留App.js和index.js;
 
@@ -164,7 +164,7 @@ ReactDOM.render(<App />, document.getElementById('root'));
 
 ​	浏览器中输入localhost:3000看到如下结果表示运行成功：	
 
-![](C:\Users\11346\Desktop\以太坊学习\assets\react空工程运行结果.png)
+![](./assets/react空工程运行结果.png)
 
 ## 合约交互
 
@@ -191,4 +191,4 @@ npm install ganache-cli -g
 ganache-cli
 ```
 
-​	启动之后如果出现如下情况表示Gananche安装成功：![](C:\Users\11346\Desktop\以太坊学习\assets\巧克力启动.png)
+​	启动之后如果出现如下情况表示Gananche安装成功：![](./assets/巧克力启动.png)
