@@ -1,73 +1,194 @@
-<<<<<<< HEAD
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+                                                    # 以太坊上的彩票开奖设计
 
-## Available Scripts
+## 前期准备
 
-In the project directory, you can run:
+​	1.编写彩票合约，使用remix；
 
-### `npm start`
+​	2.页面使用react脚手架；
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+​	3.使用nodejs+web3js与合约交互；
 
-The page will reload if you make edits.<br>
-You will also see any lint errors in the console.
+​	4.虚拟以太坊环境：巧克力
 
-### `npm test`
+​		-图形化巧克力Ganache
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+​		-命令行版巧克力ganache-cli（比较稳定，常用）
 
-### `npm run build`
+## 业务需求
 
-Builds the app for production to the `build` folder.<br>
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1.全民参与（任何地址都可以投注）
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
+2.每个人每次只能投1个ether（相当于2元1注）
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+3.每个人可以买多注
 
-### `npm run eject`
+4.设置一个管理员，负责：
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+- 定期开奖
+- 临时退奖（防止有特殊情况）
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 合约设计
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### **合约需要的状态变量**
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+​	   1.管理员：manager ，address类型
 
-## Learn More
+​	   2.记录所有的彩民的地址集合：players，address[]类型
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+​	   3.第几期：round  int
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+​	   4.上一期的中奖地址：winner，address
 
-### Code Splitting
+### **合约中的方法**
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+​	   1.参与投奖：play() payable（任何人都可以调用，调用时转入1ether到合约）
 
-### Analyzing the Bundle Size
+​	   2.管理员专用
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+​			-开奖：draw（）选择一个随机的地址，将合约的钱转入这个地址；
 
-### Making a Progressive Web App
+​			-退奖：undraw（）遍历所有的彩民，依次向彩民池中的地址转账，每人转账1ether。
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+**注意点：**
 
-### Advanced Configuration
+1. 退奖和开奖时需要花费的手续费是管理员地址账户中的钱；
+2. 投奖时花费的手续费是用户账户中的钱；
+3. 一句话：谁调用合约中的方法就花费谁的钱；
+4. 对于用户来说，进出都是1eth永远不变；
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
+### 合约代码
 
-### Deployment
+```js
+pragma solidity ^0.4.25;
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
+contract Lottery{
+    //管理员地址
+    address public manager;
+    //所有彩民
+    address[] public players;
+    //彩票期数
+    uint public round;
+    //上一期中奖地址
+    address public winner;
+    //添加管理员地址
+    constructor() public{
+        manager=msg.sender;
+    }
 
-### `npm run build` fails to minify
+    //参与投奖
+    function play() public payable{
+        //要求调用时转入
+        require(msg.value==1 * 10 ** 18);
+        players.push(msg.sender);
+    }
+    //管理员开奖
+    function draw() public onlyManager{
+        //以太坊中没有提供随机数生成方法，可以随机生成一个哈希数，并将它对数组长度取余
+        //取当前的难度值，时间戳和彩民人数作为随机数的种子
+        bytes memory info = abi.encodePacked(block.difficulty,block.timestamp,players.length);
+        bytes32 hash = keccak256(info);
+        uint index = uint(hash)%players.length;
+        winner = players[index];
+        winner.transfer(address(this).balance);
+        //彩民池清空同时期数加1
+        delete players;
+        round++;
+    }
+    
+    //管理员退奖
+    function undraw() public onlyManager{
+        //遍历彩民数组，依次向彩民转账
+        for(uint256 i=0;i<players.length;i++){
+            players[i].transfer(1 ether);
+        }
+        delete players;
+        round++;
+    }
+    /*******************辅助函数*************************/
+    //获取奖金池额度
+    function getBalance() public view returns(uint256){
+        return address(this).balance;
+    }
+    //获取当前彩民
+    function getPlayers() public view returns(address[]){
+        return players;
+    }
+    //添加修饰器
+    modifier onlyManager(){
+        require(msg.sender==manager);
+        _;
+    }
+}
+```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
-=======
-# lotteryByETH
-基于以太坊的彩票项目实现
->>>>>>> 5f771122c2aecfac75e73275e0bfd6b5587744a9
+## 前端部署（react）	
+
+### 	**创建react空工程**
+
+```sh
+npm  i -g  create-react-app //安装react
+create-react-app lottery	//创建项目文件夹
+npm run start //运行react空工程
+```
+
+### 	 **清理react空工程**
+
+​	![](C:\Users\11346\Desktop\以太坊学习\assets\react工程清理.png)
+
+​	src文件夹下只保留App.js和index.js;
+
+​	App.js以及Index.js文件夹下保留的内容：
+
+```js
+//App.js
+import React from 'react';
+
+function App() {
+  return (
+    <div className="App">
+      hellowrold!
+    </div>
+  );
+}
+export default App;
+
+//index.js
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+import App from './App';
+
+
+ReactDOM.render(<App />, document.getElementById('root'));
+```
+
+​	浏览器中输入localhost:3000看到如下结果表示运行成功：	
+
+![](C:\Users\11346\Desktop\以太坊学习\assets\react空工程运行结果.png)
+
+## 合约交互
+
+​	**安装solc编译器**
+
+```sh
+//执行该命令必须与package.json位于同一文件夹下
+cd lottery
+npm install solc@0.4.25 --save
+```
+
+​	**安装web3**
+
+```sh
+node install web3@1.2.1 --save
+```
+
+​	**启动命令行版本Ganache**
+
+```sh
+//如果没有命令行版本Ganache需要先进行安装
+npm install ganache-cli -g
+//启动巧克力
+ganache-cli
+```
+
+​	启动之后如果出现如下情况表示Gananche安装成功：![](C:\Users\11346\Desktop\以太坊学习\assets\巧克力启动.png)
