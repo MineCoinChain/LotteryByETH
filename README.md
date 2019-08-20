@@ -1,6 +1,6 @@
 # 以太坊上的彩票开奖设计
 
-## 前期准备
+## 一.前期准备
 
 ​	1.编写彩票合约，使用remix；
 
@@ -14,7 +14,7 @@
 
 ​		-命令行版巧克力ganache-cli（比较稳定，常用）
 
-## 业务需求
+## 二.业务需求
 
 1.全民参与（任何地址都可以投注）
 
@@ -27,9 +27,9 @@
 - 定期开奖
 - 临时退奖（防止有特殊情况）
 
-## 合约设计
+## 三.合约设计
 
-### **合约需要的状态变量**
+### **3.1 合约需要的状态变量**
 
 ​	   1.管理员：manager ，address类型
 
@@ -39,7 +39,7 @@
 
 ​	   4.上一期的中奖地址：winner，address
 
-### **合约中的方法**
+### **3.2合约中的方法**
 
 ​	   1.参与投奖：play() payable（任何人都可以调用，调用时转入1ether到合约）
 
@@ -56,7 +56,7 @@
 3. 一句话：谁调用合约中的方法就花费谁的钱；
 4. 对于用户来说，进出都是1eth永远不变；
 
-### 合约代码
+### 3.3 合约代码
 
 ```js
 pragma solidity ^0.4.25;
@@ -121,9 +121,9 @@ contract Lottery{
 }
 ```
 
-## 前端部署（react）	
+## 四.前端部署（react）	
 
-### 	**创建react空工程**
+### 	**4.1 创建react空工程**
 
 ```sh
 npm  i -g  create-react-app //安装react
@@ -131,7 +131,7 @@ create-react-app lottery	//创建项目文件夹
 npm run start //运行react空工程
 ```
 
-### 	 **清理react空工程**
+### 	 **4.2清理react空工程**
 
 ​	![](./assets/react工程清理.png)
 
@@ -166,9 +166,9 @@ ReactDOM.render(<App />, document.getElementById('root'));
 
 ![](./assets/react空工程运行结果.png)
 
-## 合约交互
+## 五.合约交互
 
-​	**安装solc编译器**
+​	**5.1 安装solc编译器**
 
 ```sh
 //执行该命令必须与package.json位于同一文件夹下
@@ -176,13 +176,13 @@ cd lottery
 npm install solc@0.4.25 --save
 ```
 
-​	**安装web3**
+​	**5.2 安装web3**
 
 ```sh
 node install web3@1.2.1 --save
 ```
 
-​	**启动命令行版本Ganache**
+​	**5.3 启动命令行版本Ganache**
 
 ```sh
 //如果没有命令行版本Ganache需要先进行安装
